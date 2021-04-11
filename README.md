@@ -1,6 +1,6 @@
 # Slang
 
-A simple programming language for everyone.
+A simple programming language for everyone, made in Rust.
 
 ## State
 
