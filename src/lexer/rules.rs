@@ -84,6 +84,8 @@ pub fn get_lexer_rules() -> LexerOptions {
             "for".to_string(),
             "assert".to_string(),
             "return".to_string(),
+            "at".to_string(),
+            "of".to_string(),
         ],
     }
 }

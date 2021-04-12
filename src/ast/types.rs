@@ -304,6 +304,7 @@ pub struct AssignVariableStmt {
 #[derive(Debug, Clone)]
 pub struct FunctionParam {
     pub span: Span,
+    pub name: Identifier,
     pub ptype: VarType,
     pub default: Option<ASTValue>,
 }
@@ -312,6 +313,7 @@ pub struct FunctionParam {
 pub struct BlockStmt {
     pub span: Span,
     pub ntype: String,
+    pub body: Vec<ASTNode>,
 }
 
 #[derive(Debug, Clone)]
@@ -320,7 +322,7 @@ pub struct FunctionStmt {
     pub ntype: String,
     pub name: Option<Identifier>,
     pub params: Vec<FunctionParam>,
-    pub rtype: Option<TypeExpr>,
+    pub rtype: VarType,
     pub block: BlockStmt,
 }
 
@@ -379,6 +381,7 @@ pub struct ForStmt {
     pub ntype: String,
     pub iter_val: Option<Identifier>,
     pub idx_val: Option<Identifier>,
+    pub iterable: ASTValue,
     pub block: BlockStmt,
 }
 
@@ -391,27 +394,11 @@ pub struct WhileStmt {
 }
 
 #[derive(Debug, Clone)]
-pub struct ConditionElseStmt {
-    pub span: Span,
-    pub ntype: String,
-    pub block: BlockStmt,
-}
-
-#[derive(Debug, Clone)]
-pub struct ConditionElseIfStmt {
-    pub span: Span,
-    pub ntype: String,
-    pub condition: ASTValue,
-    pub block: BlockStmt,
-}
-
-#[derive(Debug, Clone)]
 pub struct ConditionStmt {
     pub span: Span,
     pub ntype: String,
-    pub condition: ASTValue,
-    pub else_if: Vec<ConditionElseIfStmt>,
-    pub else_stmt: Option<ConditionElseStmt>,
+    pub condition: Option<ASTValue>, // not optional for if, but for else
+    pub else_stmt: Option<Box<ConditionStmt>>,
     pub block: BlockStmt,
 }
 
@@ -419,7 +406,7 @@ pub struct ConditionStmt {
 pub struct ReturnStmt {
     pub span: Span,
     pub ntype: String,
-    pub value: ASTValue,
+    pub value: Option<ASTValue>,
 }
 
 #[derive(Debug, Clone)]
