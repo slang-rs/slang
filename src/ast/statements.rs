@@ -4,16 +4,19 @@ use super::{
     expressions::expr_identifier,
     types::{
         ASTNode, AssignVariableStmt, BlockStmt, ClassStmt, ConditionStmt, Extendable, ForStmt,
-        FunctionParam, FunctionStmt, Identifier, InterfaceMember, InterfaceStmt, ReturnStmt,
-        WhileStmt,
+        FunctionParam, FunctionStmt, GlobalBlockStmt, GlobalNode, Identifier, InterfaceMember,
+        InterfaceStmt, ReturnStmt, WhileStmt,
     },
 };
 use super::{
     expressions::{expr_access, Accessable},
-    types::{ASTValue, Assignable, InitVariableStmt, TypeExpr, VarType},
+    types::{
+        ASTValue, Assignable, ExportStmt, Exportable, ImportStmt, InitVariableStmt, TypeExpr,
+        VarType,
+    },
 };
 use crate::common::position::{Position, Span};
-use crate::lexer::parser::TokenType;
+use crate::lexer::parser::{Token, TokenType};
 
 pub fn stmt_init_variable(ast: &mut AST) -> InitVariableStmt {
     let init_token = ast
@@ -262,12 +265,32 @@ pub fn stmt_block(ast: &mut AST, global: bool) -> BlockStmt {
         && token.clone().unwrap().ttype != TokenType::Braces
         && token.clone().unwrap().value != "}"
     {
-        let tok = token.unwrap();
+        let tok = token.clone().unwrap();
         if tok.ttype == TokenType::Keyword {
             if tok.value == "let" || tok.value == "const" {
                 body.push(ASTNode::InitVariableStmt(stmt_init_variable(ast)));
             } else if tok.value == "return" {
                 body.push(ASTNode::ReturnStmt(stmt_return(ast)));
+            } else if tok.value == "interface" {
+                body.push(ASTNode::InterfaceStmt(stmt_interface(ast)));
+            } else if tok.value == "while" {
+                body.push(ASTNode::WhileStmt(stmt_while(ast)));
+            } else if tok.value == "if" {
+                body.push(ASTNode::ConditionStmt(stmt_condition(ast)));
+            } else if tok.value == "for" {
+                body.push(ASTNode::ForStmt(stmt_for(ast)));
+            } else if tok.value == "class" {
+                body.push(ASTNode::ClassStmt(stmt_class(ast)));
+            } else {
+                let val = ast.get_ast_value(false, vec![], None);
+                if val.is_some() {
+                    body.push(ASTNode::Value(val.unwrap()));
+                }
+            }
+        } else {
+            let val = ast.get_ast_value(false, vec![], None);
+            if val.is_some() {
+                body.push(ASTNode::Value(val.unwrap()));
             }
         }
 
@@ -594,5 +617,118 @@ pub fn stmt_class(ast: &mut AST) -> ClassStmt {
         initializer,
         properties,
         methods,
+    }
+}
+
+pub fn stmt_global_block(ast: &mut AST) -> GlobalBlockStmt {
+    let mut body: Vec<GlobalNode> = vec![];
+
+    let mut token: Option<Token> = ast.get_token(0, true, false);
+    let mut is_export = false;
+    while token.is_some() {
+        let tok = token.unwrap();
+        let mut other_node = false;
+        if tok.ttype == TokenType::Keyword {
+            if tok.value == "import" {
+                let mut spec: Vec<Identifier> = vec![];
+
+                while ast
+                    .check_token(Some(vec![TokenType::Word]), None, false, false, 0)
+                    .is_some()
+                {
+                    spec.push(expr_identifier(ast));
+                    ast.check_one(TokenType::Operator, String::from(","), false, true);
+                }
+
+                if spec.len() == 0 {
+                    ast.error(
+                        String::from("Expected import specifier"),
+                        tok.start.line,
+                        tok.start.col,
+                    );
+                } else {
+                    body.push(GlobalNode::ImportStmt(ImportStmt {
+                        span: Span {
+                            start: tok.start,
+                            end: spec.last().unwrap().span.end,
+                        },
+                        spec,
+                        ntype: String::from("ImportStmt"),
+                    }));
+                }
+            } else if tok.value == "export" {
+                if is_export {
+                    ast.error(
+                        String::from("Unexpected keyword export"),
+                        tok.start.line,
+                        tok.start.col,
+                    );
+                }
+                is_export = true;
+            } else {
+                other_node = true;
+            }
+        } else {
+            other_node = true;
+        }
+
+        if other_node {
+            let block = stmt_block(ast, true);
+
+            for node in block.body {
+                if is_export {
+                    match node {
+                        ASTNode::ClassStmt(e) => {
+                            body.push(GlobalNode::ExportStmt(ExportStmt {
+                                ntype: String::from("ExportStmt"),
+                                item: Exportable::Class(e),
+                            }));
+                        }
+                        ASTNode::InterfaceStmt(e) => {
+                            body.push(GlobalNode::ExportStmt(ExportStmt {
+                                ntype: String::from("ExportStmt"),
+                                item: Exportable::Interface(e),
+                            }));
+                        }
+                        ASTNode::FunctionStmt(e) => {
+                            body.push(GlobalNode::ExportStmt(ExportStmt {
+                                ntype: String::from("ExportStmt"),
+                                item: Exportable::Function(e),
+                            }));
+                        }
+                        ASTNode::InitVariableStmt(e) => {
+                            body.push(GlobalNode::ExportStmt(ExportStmt {
+                                ntype: String::from("ExportStmt"),
+                                item: Exportable::Variable(e),
+                            }));
+                        }
+                        _ => {
+                            let span = node.get_span();
+                            ast.error(
+                                String::from("Invalid item to export"),
+                                span.start.line,
+                                span.start.col,
+                            );
+                        }
+                    }
+                } else {
+                    body.push(GlobalNode::Node(node));
+                }
+            }
+        }
+        token = ast.get_token(0, true, false);
+    }
+
+    GlobalBlockStmt {
+        ntype: String::from("GlobalBlockStmt"),
+        span: Span {
+            start: Position::new(0, 0),
+            end: if token.is_some() {
+                token.unwrap().end
+            } else {
+                Position::new(0, 0)
+            },
+        },
+        body,
     }
 }

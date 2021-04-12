@@ -345,16 +345,21 @@ pub struct InterfaceStmt {
 pub struct ImportStmt {
     pub span: Span,
     pub ntype: String,
-    pub what: Vec<Identifier>,
-    pub from: StringParsed,
+    pub spec: Vec<Identifier>,
+}
+
+#[derive(Debug, Clone)]
+pub enum Exportable {
+    Function(FunctionStmt),
+    Class(ClassStmt),
+    Interface(InterfaceStmt),
+    Variable(InitVariableStmt),
 }
 
 #[derive(Debug, Clone)]
 pub struct ExportStmt {
-    pub span: Span,
     pub ntype: String,
-    pub what: Vec<Identifier>,
-    pub from: Option<StringParsed>,
+    pub item: Exportable,
 }
 
 #[derive(Debug, Clone)]
@@ -420,6 +425,22 @@ pub enum ASTNode {
     ConditionStmt(ConditionStmt),
     ReturnStmt(ReturnStmt),
     InterfaceStmt(InterfaceStmt),
+}
+
+impl ASTNode {
+    pub fn get_span(&self) -> Span {
+        match self {
+            ASTNode::Value(e) => e.get_span2(),
+            ASTNode::InitVariableStmt(e) => e.span,
+            ASTNode::FunctionStmt(e) => e.span,
+            ASTNode::ClassStmt(e) => e.span,
+            ASTNode::ForStmt(e) => e.span,
+            ASTNode::WhileStmt(e) => e.span,
+            ASTNode::ConditionStmt(e) => e.span,
+            ASTNode::ReturnStmt(e) => e.span,
+            ASTNode::InterfaceStmt(e) => e.span,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
