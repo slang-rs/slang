@@ -23,10 +23,11 @@ pub fn expr_identifier(ast: &mut AST) -> Identifier {
 }
 
 pub fn expr_access_dot(ast: &mut AST, left: Option<DotAccessable>) -> AccessDotExpr {
+    println!("expr access dot");
     let left = if left.is_some() {
         left.unwrap()
     } else {
-        Accessable::get_dot_access(&expr_access(ast, false, true, false))
+        Accessable::get_dot_access(&expr_access(ast, true, true, false).unwrap())
     };
 
     let mut return_null = false;
@@ -54,7 +55,7 @@ pub fn expr_access_dot(ast: &mut AST, left: Option<DotAccessable>) -> AccessDotE
     }
 
     let right = expr_access(ast, false, false, false);
-    let right = Accessable::get_dot_access(&right);
+    let right = Accessable::get_dot_access(&right.unwrap());
     let left_clone = left.clone();
     let right_clone = right.clone();
 
@@ -74,7 +75,7 @@ pub fn expr_access_index(ast: &mut AST, left: Option<DotAccessable>) -> AccessIn
     let left = if left.is_some() {
         left.unwrap()
     } else {
-        Accessable::get_dot_access(&expr_access(ast, false, true, false))
+        Accessable::get_dot_access(&expr_access(ast, false, true, false).unwrap())
     };
 
     let token_start = ast
@@ -111,10 +112,11 @@ pub fn expr_access_index(ast: &mut AST, left: Option<DotAccessable>) -> AccessIn
 }
 
 pub fn expr_call_function(ast: &mut AST, left: Option<ASTValue>) -> CallFunctionExpr {
+    println!("expr call fn");
     let left = if left.is_some() {
         left.unwrap()
     } else {
-        Accessable::get_ast_value(&expr_access(ast, false, false, true))
+        Accessable::get_ast_value(&expr_access(ast, false, false, true).unwrap())
     };
 
     let token_start = ast
@@ -207,32 +209,51 @@ impl Accessable {
     }
 }
 
-pub fn expr_access(ast: &mut AST, skip_dot: bool, skip_index: bool, skip_func: bool) -> Accessable {
+pub fn expr_access(
+    ast: &mut AST,
+    skip_dot: bool,
+    skip_index: bool,
+    skip_func: bool,
+) -> Option<Accessable> {
+    println!("expr access {} {} {}", skip_dot, skip_index, skip_func);
     ast.check_token(Some(vec![TokenType::Word]), None, false, false, 0);
+    println!("expr check");
 
-    if !skip_dot
-        && ast
-            .check_token(
-                Some(vec![TokenType::Operator]),
-                Some(vec![String::from("?."), String::from(".")]),
-                false,
-                false,
-                0,
-            )
-            .is_some()
-    {
-        Accessable::AccessDotExpr(expr_access_dot(ast, None))
-    } else if !skip_func
-        && ast
-            .check_token(
-                Some(vec![TokenType::Parenthesis]),
-                Some(vec![String::from("(")]),
-                false,
-                false,
-                0,
-            )
-            .is_some()
-    {
+    let is_dot = ast
+        .check_token(
+            Some(vec![TokenType::Operator]),
+            Some(vec![String::from("?."), String::from(".")]),
+            false,
+            false,
+            1,
+        )
+        .is_some();
+
+    let is_func = ast
+        .check_token(
+            Some(vec![TokenType::Parenthesis]),
+            Some(vec![String::from("(")]),
+            false,
+            false,
+            1,
+        )
+        .is_some();
+
+    let is_index = ast
+        .check_token(
+            Some(vec![TokenType::SqBraces]),
+            Some(vec![String::from("[")]),
+            false,
+            false,
+            0,
+        )
+        .is_some();
+
+    if !skip_dot && is_dot {
+        println!("is dot");
+        Some(Accessable::AccessDotExpr(expr_access_dot(ast, None)))
+    } else if !skip_func && is_func {
+        println!("is func call");
         let result = expr_call_function(ast, None);
 
         if ast
@@ -245,24 +266,21 @@ pub fn expr_access(ast: &mut AST, skip_dot: bool, skip_index: bool, skip_func: b
             )
             .is_some()
         {
-            Accessable::AccessDotExpr(expr_access_dot(ast, None))
+            Some(Accessable::AccessDotExpr(expr_access_dot(ast, None)))
         } else {
-            Accessable::CallFunctionExpr(result)
+            Some(Accessable::CallFunctionExpr(result))
         }
-    } else if !skip_index
-        && ast
-            .check_token(
-                Some(vec![TokenType::SqBraces]),
-                Some(vec![String::from("[")]),
-                false,
-                false,
-                0,
-            )
-            .is_some()
+    } else if !skip_index && is_index {
+        println!("is index");
+        Some(Accessable::AccessIndexExpr(expr_access_index(ast, None)))
+    } else if ast
+        .check_token(Some(vec![TokenType::Word]), None, false, false, 0)
+        .is_some()
     {
-        Accessable::AccessIndexExpr(expr_access_index(ast, None))
+        println!("is ident");
+        Some(Accessable::Identifier(expr_identifier(ast)))
     } else {
-        Accessable::Identifier(expr_identifier(ast))
+        None
     }
 }
 

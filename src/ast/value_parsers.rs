@@ -74,7 +74,7 @@ pub fn value_float_parser(ast: &mut AST) -> FloatParsed {
 pub fn value_bool_parser(ast: &mut AST) -> BoolParsed {
     let token = ast
         .check_token(
-            Some(vec![TokenType::String]),
+            Some(vec![TokenType::Keyword]),
             Some(vec![String::from("true"), String::from("false")]),
             true,
             true,

@@ -8,11 +8,14 @@ use crate::{
 use super::{
     expressions::{expr_access, expr_access_index, expr_call_function, expr_type_cast, Accessable},
     operators::{op_arithmetic, op_binary, op_logical, op_unary},
-    statements::{stmt_assign_variable, stmt_condition, stmt_function, stmt_init_variable},
-    types::{ASTValue, Assignable, DotAccessable, TypeExpr, TypeValue},
+    statements::{
+        stmt_assign_variable, stmt_condition, stmt_function, stmt_global_block, stmt_init_variable,
+    },
+    types::{ASTValue, Assignable, DotAccessable, GlobalBlockStmt, TypeExpr, TypeValue},
     value_parsers,
 };
 
+#[derive(Debug)]
 pub struct ASTError {
     pub msg: String,
     pub pos: Position,
@@ -64,6 +67,11 @@ impl AST {
             }
         }
 
+        println!(
+            "get token ({}) {} {} {} -> {:?}",
+            self.token_idx, offset, add_to_index, skip_newline, token
+        );
+
         if token.is_some() {
             Some(token.unwrap().clone())
         } else {
@@ -79,7 +87,8 @@ impl AST {
         add_to_index: bool,
         offset: isize,
     ) -> Option<Token> {
-        let token = self.get_token(offset, add_to_index, true);
+        let token = self.get_token(offset, false, false);
+        println!("check token {} {} {:?}", error, add_to_index, token);
         if token.is_none() {
             if error {
                 let last_token = self.tokens.last();
@@ -100,6 +109,10 @@ impl AST {
         } else {
             let token = token.unwrap();
 
+            if token.ttype == TokenType::NewLine {
+                return self.check_token(ttype, value, error, add_to_index, offset + 1);
+            }
+
             let mut match_ttype = true;
             if ttype.is_some() {
                 let ttype = ttype.unwrap();
@@ -117,6 +130,9 @@ impl AST {
             }
 
             if match_ttype && match_value {
+                if add_to_index {
+                    self.token_idx += 1;
+                }
                 Some(token)
             } else {
                 if error {
@@ -282,7 +298,7 @@ impl AST {
         skip: Vec<String>,
         up: Option<ASTValue>,
     ) -> Option<ASTValue> {
-        let current_token = self.get_token(0, true, false);
+        let current_token = self.get_token(0, false, false);
         let mut up = up;
 
         if current_token.is_some() {
@@ -295,10 +311,10 @@ impl AST {
             } else if current_token.ttype == TokenType::Parenthesis && current_token.value == "(" {
                 if !skip.contains(&String::from("CallFunctionExpr"))
                     && (up.is_some()
-                        && up.clone().unwrap().get_type() == "CallFunctionExpr"
-                        && up.clone().unwrap().get_type() == "AccessDotExpr"
-                        && up.clone().unwrap().get_type() == "Identifier"
-                        && up.clone().unwrap().get_type() == "AccessIndexExpr")
+                        || up.clone().unwrap().get_type() == "CallFunctionExpr"
+                        || up.clone().unwrap().get_type() == "AccessDotExpr"
+                        || up.clone().unwrap().get_type() == "Identifier"
+                        || up.clone().unwrap().get_type() == "AccessIndexExpr")
                 {
                     up = Some(ASTValue::CallFunctionExpr(Box::new(expr_call_function(
                         self, up,
@@ -353,10 +369,15 @@ impl AST {
                 || !skip.contains(&"CallFunctionExpr".to_string()))
                 && current_token.ttype == TokenType::Word
             {
+                println!("astv expr access {:?}", current_token);
                 let res = expr_access(self, false, false, false);
-                let astv = Accessable::get_ast_value(&res);
-                if !skip.contains(&astv.get_type()) {
-                    up = Some(astv);
+                let astv = if res.is_some() {
+                    Some(Accessable::get_ast_value(&res.unwrap()))
+                } else {
+                    None
+                };
+                if astv.is_some() && !skip.contains(&astv.clone().unwrap().get_type()) {
+                    up = Some(astv.unwrap());
                 } else {
                     if error {
                         self.error(
@@ -375,11 +396,13 @@ impl AST {
                 up = Some(ASTValue::StringParsed(value_parsers::value_string_parser(
                     self,
                 )));
+                return up; // idk
             } else if !skip.contains(&"IntParsed".to_string())
                 && current_token.ttype == TokenType::Number
                 && up.is_none()
             {
                 up = Some(ASTValue::IntParsed(value_parsers::value_int_parser(self)));
+                // return up; // idk
             } else if !skip.contains(&"FloatParsed".to_string())
                 && current_token.ttype == TokenType::Float
                 && up.is_none()
@@ -387,6 +410,7 @@ impl AST {
                 up = Some(ASTValue::FloatParsed(value_parsers::value_float_parser(
                     self,
                 )));
+                return up; // idk
             } else if (!skip.contains(&"AccessIndexExpr".to_string())
                 || !skip.contains(&"ArrayParsed".to_string()))
                 && current_token.ttype == TokenType::SqBraces
@@ -487,6 +511,7 @@ impl AST {
             {
                 up
             } else {
+                println!("fallback test {:?}", up);
                 self.get_ast_value(false, skip, up)
             }
         } else {
@@ -505,7 +530,15 @@ impl AST {
                     },
                 )
             }
-            None
+            if up.is_some() {
+                up
+            } else {
+                None
+            }
         }
+    }
+
+    pub fn get_global_block(&mut self) -> GlobalBlockStmt {
+        stmt_global_block(self)
     }
 }

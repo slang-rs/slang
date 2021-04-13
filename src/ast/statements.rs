@@ -44,7 +44,7 @@ pub fn stmt_init_variable(ast: &mut AST) -> InitVariableStmt {
         )
         .is_none()
     {
-        ast.check_one(TokenType::AssignmentOperator, String::from(":"), true, true)
+        ast.check_one(TokenType::Operator, String::from(":"), true, true)
             .unwrap();
         type_expr = Some(ast.get_type_expr());
     }
@@ -92,7 +92,7 @@ pub fn stmt_assign_variable(ast: &mut AST, up: Option<Assignable>) -> AssignVari
     let target = if up.is_some() {
         up.unwrap()
     } else {
-        Accessable::get_assignable(&expr_access(ast, false, false, true)).unwrap()
+        Accessable::get_assignable(&expr_access(ast, false, false, true).unwrap()).unwrap()
     };
 
     let op = ast
@@ -121,6 +121,7 @@ pub fn stmt_assign_variable(ast: &mut AST, up: Option<Assignable>) -> AssignVari
 }
 
 pub fn stmt_function(ast: &mut AST, name_req: bool, word: Option<String>) -> FunctionStmt {
+    println!("stmt func {} {:?}", name_req, word);
     let token_start = ast
         .check_one(
             if word.is_some() {
@@ -346,6 +347,8 @@ pub fn stmt_interface(ast: &mut AST) -> InterfaceStmt {
         ast.check_one(TokenType::Operator, String::from(":"), true, true);
         let el_type = ast.get_type_expr();
 
+        ast.check_one(TokenType::Operator, String::from(","), false, true);
+
         members.push(InterfaceMember {
             span: Span {
                 start: el_name.span.start,
@@ -509,7 +512,7 @@ pub fn stmt_class(ast: &mut AST) -> ClassStmt {
     {
         let extend = expr_access(ast, false, false, false);
 
-        match extend {
+        match extend.unwrap() {
             Accessable::CallFunctionExpr(e) => ast.error(
                 String::from("Expected class, but found Function Call Expression"),
                 e.span.start.line,
@@ -538,7 +541,7 @@ pub fn stmt_class(ast: &mut AST) -> ClassStmt {
         let implc = expr_access(ast, false, false, false);
         let mut impls: Option<Extendable> = None;
 
-        match implc {
+        match implc.unwrap() {
             Accessable::CallFunctionExpr(e) => ast.error(
                 String::from("Expected interface, but found Function Call Expression"),
                 e.span.start.line,
@@ -623,7 +626,7 @@ pub fn stmt_class(ast: &mut AST) -> ClassStmt {
 pub fn stmt_global_block(ast: &mut AST) -> GlobalBlockStmt {
     let mut body: Vec<GlobalNode> = vec![];
 
-    let mut token: Option<Token> = ast.get_token(0, true, false);
+    let mut token: Option<Token> = ast.get_token(0, false, false);
     let mut is_export = false;
     while token.is_some() {
         let tok = token.unwrap();

@@ -497,7 +497,14 @@ impl Lexer {
                                 | OpType::Unary
                                 | OpType::Other => {
                                     state.start(self, StateType::Operator);
-                                    state.push(String::from(ch));
+                                    let mut chrs = String::from(ch);
+                                    if ch == ':'
+                                        && chars.get(idx - 1).is_some()
+                                        && *chars.get(idx - 1).unwrap() == '='
+                                    {
+                                        chrs += "=";
+                                    }
+                                    state.push(chrs);
                                     state.pos_from(&stored_pos);
                                     state.end(self, &mut results);
                                 }
