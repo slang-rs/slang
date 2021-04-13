@@ -5,7 +5,13 @@ use crate::{
     lexer::parser::{Token, TokenType},
 };
 
-use super::types::{ASTValue, TypeExpr, TypeValue};
+use super::{
+    expressions::{expr_access, expr_access_index, expr_call_function, expr_type_cast, Accessable},
+    operators::{op_arithmetic, op_binary, op_logical, op_unary},
+    statements::{stmt_assign_variable, stmt_condition, stmt_function, stmt_init_variable},
+    types::{ASTValue, Assignable, DotAccessable, TypeExpr, TypeValue},
+    value_parsers,
+};
 
 pub struct ASTError {
     pub msg: String,
@@ -41,14 +47,14 @@ impl AST {
 
     pub fn get_token(
         &mut self,
-        offset: usize,
+        offset: isize,
         add_to_index: bool,
         skip_newline: bool,
     ) -> Option<Token> {
-        let mut idx = offset + self.token_idx;
+        let mut idx = (offset + (self.token_idx as isize)) as usize;
         let mut token = self.tokens.get(idx);
         if add_to_index {
-            self.token_idx += offset + 1;
+            self.token_idx = ((self.token_idx as isize) + (offset + 1)) as usize;
         }
         if skip_newline {
             while token.is_some() && token.unwrap().ttype == TokenType::NewLine {
@@ -71,7 +77,7 @@ impl AST {
         value: Option<Vec<String>>,
         error: bool,
         add_to_index: bool,
-        offset: usize,
+        offset: isize,
     ) -> Option<Token> {
         let token = self.get_token(offset, add_to_index, true);
         if token.is_none() {
@@ -277,6 +283,7 @@ impl AST {
         up: Option<ASTValue>,
     ) -> Option<ASTValue> {
         let current_token = self.get_token(0, true, false);
+        let mut up = up;
 
         if current_token.is_some() {
             let current_token = current_token.unwrap();
@@ -284,9 +291,203 @@ impl AST {
                 || (current_token.ttype == TokenType::Operator && current_token.value == ";")
             {
                 self.token_idx += 1;
+                return up;
+            } else if current_token.ttype == TokenType::Parenthesis && current_token.value == "(" {
+                if !skip.contains(&String::from("CallFunctionExpr"))
+                    && (up.is_some()
+                        && up.clone().unwrap().get_type() == "CallFunctionExpr"
+                        && up.clone().unwrap().get_type() == "AccessDotExpr"
+                        && up.clone().unwrap().get_type() == "Identifier"
+                        && up.clone().unwrap().get_type() == "AccessIndexExpr")
+                {
+                    up = Some(ASTValue::CallFunctionExpr(Box::new(expr_call_function(
+                        self, up,
+                    ))));
+                } else {
+                    self.check_one(TokenType::Parenthesis, String::from("("), true, true);
+                    up = self.get_ast_value(true, vec![], up);
+                    self.check_one(TokenType::Parenthesis, String::from(")"), true, true);
+                }
+            } else if !skip.contains(&"ArithmeticOp".to_string())
+                && current_token.ttype == TokenType::ArithmeticOperator
+            {
+                up = Some(ASTValue::ArithmeticOp(Box::new(op_arithmetic(self, up))));
+            } else if !skip.contains(&"AssignVariableStmt".to_string())
+                && current_token.ttype == TokenType::AssignmentOperator
+            {
+                if up.is_some()
+                    && (up.clone().unwrap().get_type() == "AccessDotExpr"
+                        || up.clone().unwrap().get_type() == "Identifier"
+                        || up.clone().unwrap().get_type() == "AccessIndexExpr")
+                {
+                    up = Some(ASTValue::AssignVariableStmt(Box::new(
+                        stmt_assign_variable(
+                            self,
+                            Some(match up.unwrap() {
+                                ASTValue::AccessDotExpr(e) => Assignable::AccessDotExpr(*e),
+                                ASTValue::AccessIndexExpr(e) => Assignable::AccessIndexExpr(*e),
+                                ASTValue::Identifier(e) => Assignable::Identifier(e),
+                                _ => unreachable!(),
+                            }),
+                        ),
+                    )));
+                } else {
+                    up = Some(ASTValue::AssignVariableStmt(Box::new(
+                        stmt_assign_variable(self, None),
+                    )));
+                }
+            } else if !skip.contains(&"LogicalOp".to_string())
+                && current_token.ttype == TokenType::LogicalOperator
+            {
+                up = Some(ASTValue::LogicalOp(Box::new(op_logical(self, up))));
+            } else if !skip.contains(&"BinaryOp".to_string())
+                && current_token.ttype == TokenType::BinaryOperator
+            {
+                up = Some(ASTValue::BinaryOp(Box::new(op_binary(self, up))));
+            } else if !skip.contains(&"UnaryOp".to_string())
+                && current_token.ttype == TokenType::UnaryOperator
+            {
+                up = Some(ASTValue::UnaryOp(Box::new(op_unary(self, up))));
+            } else if (!skip.contains(&"AccessDotExpr".to_string())
+                || !skip.contains(&"Identifier".to_string())
+                || !skip.contains(&"CallFunctionExpr".to_string()))
+                && current_token.ttype == TokenType::Word
+            {
+                let res = expr_access(self, false, false, false);
+                let astv = Accessable::get_ast_value(&res);
+                if !skip.contains(&astv.get_type()) {
+                    up = Some(astv);
+                } else {
+                    if error {
+                        self.error(
+                            format!("Unexpected token {}", current_token.value),
+                            current_token.start.line,
+                            current_token.start.col,
+                        );
+                    } else {
+                        return up;
+                    }
+                }
+            } else if !skip.contains(&"StringParsed".to_string())
+                && current_token.ttype == TokenType::String
+                && up.is_none()
+            {
+                up = Some(ASTValue::StringParsed(value_parsers::value_string_parser(
+                    self,
+                )));
+            } else if !skip.contains(&"IntParsed".to_string())
+                && current_token.ttype == TokenType::Number
+                && up.is_none()
+            {
+                up = Some(ASTValue::IntParsed(value_parsers::value_int_parser(self)));
+            } else if !skip.contains(&"FloatParsed".to_string())
+                && current_token.ttype == TokenType::Float
+                && up.is_none()
+            {
+                up = Some(ASTValue::FloatParsed(value_parsers::value_float_parser(
+                    self,
+                )));
+            } else if (!skip.contains(&"AccessIndexExpr".to_string())
+                || !skip.contains(&"ArrayParsed".to_string()))
+                && current_token.ttype == TokenType::SqBraces
+                && current_token.value == "["
+            {
+                if !skip.contains(&"AccessIndexExpr".to_string())
+                    && (up.is_some()
+                        && (up.clone().unwrap().get_type() == "AccessDotExpr"
+                            || up.clone().unwrap().get_type() == "Identifier"
+                            || up.clone().unwrap().get_type() == "CallFunctionExpr"))
+                {
+                    up = Some(ASTValue::AccessIndexExpr(Box::new(expr_access_index(
+                        self,
+                        Some(match up.unwrap() {
+                            ASTValue::CallFunctionExpr(e) => DotAccessable::CallFunctionExpr(*e),
+                            ASTValue::AccessIndexExpr(e) => DotAccessable::AccessIndexExpr(e),
+                            ASTValue::AccessDotExpr(e) => DotAccessable::AccessDotExpr(e),
+                            ASTValue::Identifier(e) => DotAccessable::Identifier(e),
+                            _ => unreachable!(),
+                        }),
+                    ))));
+                } else if !skip.contains(&"ArrayParsed".to_string()) && up.is_none() {
+                    up = Some(ASTValue::ArrayParsed(value_parsers::value_array_parser(
+                        self,
+                    )));
+                }
+            } else if !skip.contains(&"DictParsed".to_string())
+                && current_token.ttype == TokenType::Braces
+                && current_token.value == "{"
+                && up.is_none()
+            {
+                up = Some(ASTValue::DictParsed(value_parsers::value_dict_parser(self)));
+            } else if (!skip.contains(&"BoolParsed".to_string())
+                || !skip.contains(&"FunctionStmt".to_string())
+                || !skip.contains(&"TypeCastExpr".to_string()))
+                && current_token.ttype == TokenType::Keyword
+            {
+                if !skip.contains(&"BoolParsed".to_string())
+                    && (current_token.value == "true" || current_token.value == "false")
+                    && up.is_none()
+                {
+                    up = Some(ASTValue::BoolParsed(value_parsers::value_bool_parser(self)));
+                } else if !skip.contains(&"FunctionStmt".to_string())
+                    && current_token.value == "func"
+                    && up.is_none()
+                {
+                    up = Some(ASTValue::FunctionStmt(Box::new(stmt_function(
+                        self, true, None,
+                    ))));
+                    return up;
+                } else if !skip.contains(&"ConditionStmt".to_string())
+                    && current_token.value == "if"
+                    && up.is_none()
+                {
+                    up = Some(ASTValue::ConditionStmt(Box::new(stmt_condition(self))));
+                } else if !skip.contains(&"InitVariableStmt".to_string())
+                    && (current_token.value == "let" || current_token.value == "const")
+                    && up.is_none()
+                {
+                    up = Some(ASTValue::InitVariableStmt(Box::new(stmt_init_variable(
+                        self,
+                    ))));
+                } else if !skip.contains(&"TypeCastExpr".to_string()) && current_token.value == "as"
+                {
+                    up = Some(ASTValue::TypeCastExpr(Box::new(expr_type_cast(self, up))));
+                } else {
+                    if error {
+                        self.error(
+                            format!("Unexpected token {}", current_token.value),
+                            current_token.start.line,
+                            current_token.start.col,
+                        );
+                    } else {
+                        return up;
+                    }
+                }
+            } else if !skip.contains(&"NullParsed".to_string())
+                && current_token.ttype == TokenType::Type
+                && current_token.value == "null"
+            {
+                up = Some(ASTValue::NullParsed(value_parsers::value_null_parser(self)));
+            } else {
+                if error {
+                    self.error(
+                        format!("Unexpected syntax {}", current_token.value),
+                        current_token.start.line,
+                        current_token.start.col,
+                    );
+                }
+                return up;
+            }
+
+            let test_token = self.get_token(-1, false, false);
+            if test_token.is_some()
+                && (test_token.clone().unwrap().ttype == TokenType::NewLine
+                    || (test_token.clone().unwrap().ttype == TokenType::Operator
+                        && test_token.clone().unwrap().value == ";"))
+            {
                 up
             } else {
-                None
+                self.get_ast_value(false, skip, up)
             }
         } else {
             if error {

@@ -29,6 +29,11 @@ pub enum ASTValue {
     ArrayParsed(ArrayParsed),
     NullParsed(NullParsed),
     DictParsed(DictParsed),
+    StringParsed(StringParsed),
+    AssignVariableStmt(Box<AssignVariableStmt>),
+    FunctionStmt(Box<FunctionStmt>),
+    ConditionStmt(Box<ConditionStmt>),
+    InitVariableStmt(Box<InitVariableStmt>),
 }
 
 impl ASTValue {
@@ -49,6 +54,36 @@ impl ASTValue {
             ASTValue::ArrayParsed(e) => e.span,
             ASTValue::NullParsed(e) => e.span,
             ASTValue::DictParsed(e) => e.span,
+            ASTValue::AssignVariableStmt(e) => e.span,
+            ASTValue::StringParsed(e) => e.span,
+            ASTValue::FunctionStmt(e) => e.span,
+            ASTValue::ConditionStmt(e) => e.span,
+            ASTValue::InitVariableStmt(e) => e.span,
+        }
+    }
+
+    pub fn get_type(&self) -> String {
+        match self {
+            ASTValue::Identifier(e) => e.ntype.clone(),
+            ASTValue::CallFunctionExpr(e) => e.ntype.clone(),
+            ASTValue::ArithmeticOp(e) => e.ntype.clone(),
+            ASTValue::LogicalOp(e) => e.ntype.clone(),
+            ASTValue::BinaryOp(e) => e.ntype.clone(),
+            ASTValue::UnaryOp(e) => e.ntype.clone(),
+            ASTValue::AccessDotExpr(e) => e.ntype.clone(),
+            ASTValue::AccessIndexExpr(e) => e.ntype.clone(),
+            ASTValue::TypeCastExpr(e) => e.ntype.clone(),
+            ASTValue::IntParsed(e) => e.ntype.clone(),
+            ASTValue::FloatParsed(e) => e.ntype.clone(),
+            ASTValue::BoolParsed(e) => e.ntype.clone(),
+            ASTValue::ArrayParsed(e) => e.ntype.clone(),
+            ASTValue::NullParsed(e) => e.ntype.clone(),
+            ASTValue::DictParsed(e) => e.ntype.clone(),
+            ASTValue::ConditionStmt(e) => e.ntype.clone(),
+            ASTValue::InitVariableStmt(e) => e.ntype.clone(),
+            ASTValue::FunctionStmt(e) => e.ntype.clone(),
+            ASTValue::StringParsed(e) => e.ntype.clone(),
+            ASTValue::AssignVariableStmt(e) => e.ntype.clone(),
         }
     }
 
@@ -203,7 +238,7 @@ pub enum NumType {
 pub struct IntParsed {
     pub span: Span,
     pub ntype: String,
-    pub value: IntValue,
+    pub value: String,
 }
 
 #[derive(Debug, Clone)]
@@ -222,7 +257,7 @@ pub enum FloatType {
 pub struct FloatParsed {
     pub span: Span,
     pub ntype: String,
-    pub value: FloatValue,
+    pub value: String,
 }
 
 #[derive(Debug, Clone)]

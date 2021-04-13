@@ -1,11 +1,11 @@
 use crate::ast::main::AST;
 use crate::common::position::Span;
 use crate::lexer::parser::TokenType;
-use std::str::FromStr;
+// use std::str::FromStr;
 
 use super::types::{
-    ASTValue, ArrayParsed, BoolParsed, DictElement, DictParsed, FloatParsed, FloatType, FloatValue,
-    IntParsed, IntValue, NullParsed, NumType, StringParsed,
+    ASTValue, ArrayParsed, BoolParsed, DictElement, DictParsed, FloatParsed, IntParsed, NullParsed,
+    StringParsed,
 };
 
 use super::expressions::expr_identifier;
@@ -25,25 +25,25 @@ pub fn value_string_parser(ast: &mut AST) -> StringParsed {
     }
 }
 
-pub fn value_int_parser(ast: &mut AST, ntype: NumType) -> IntParsed {
+pub fn value_int_parser(ast: &mut AST) -> IntParsed {
     let token = ast
         .check_token(Some(vec![TokenType::Number]), None, true, true, 0)
         .unwrap();
 
-    let value = match ntype {
-        NumType::U8 => IntValue::U8(u8::from_str(&token.value).unwrap()),
-        NumType::U16 => IntValue::U16(u16::from_str(&token.value).unwrap()),
-        NumType::U32 => IntValue::U32(u32::from_str(&token.value).unwrap()),
-        NumType::U64 => IntValue::U64(u64::from_str(&token.value).unwrap()),
-        NumType::I8 => IntValue::I8(i8::from_str(&token.value).unwrap()),
-        NumType::I16 => IntValue::I16(i16::from_str(&token.value).unwrap()),
-        NumType::I32 => IntValue::I32(i32::from_str(&token.value).unwrap()),
-        NumType::I64 => IntValue::I64(i64::from_str(&token.value).unwrap()),
-    };
+    // let value = match ntype {
+    //     NumType::U8 => IntValue::U8(u8::from_str(&token.value).unwrap()),
+    //     NumType::U16 => IntValue::U16(u16::from_str(&token.value).unwrap()),
+    //     NumType::U32 => IntValue::U32(u32::from_str(&token.value).unwrap()),
+    //     NumType::U64 => IntValue::U64(u64::from_str(&token.value).unwrap()),
+    //     NumType::I8 => IntValue::I8(i8::from_str(&token.value).unwrap()),
+    //     NumType::I16 => IntValue::I16(i16::from_str(&token.value).unwrap()),
+    //     NumType::I32 => IntValue::I32(i32::from_str(&token.value).unwrap()),
+    //     NumType::I64 => IntValue::I64(i64::from_str(&token.value).unwrap()),
+    // };
 
     IntParsed {
         ntype: String::from("IntParsed"),
-        value,
+        value: token.value,
         span: Span {
             start: token.start,
             end: token.end,
@@ -51,19 +51,19 @@ pub fn value_int_parser(ast: &mut AST, ntype: NumType) -> IntParsed {
     }
 }
 
-pub fn value_float_parser(ast: &mut AST, ntype: FloatType) -> FloatParsed {
+pub fn value_float_parser(ast: &mut AST) -> FloatParsed {
     let token = ast
         .check_token(Some(vec![TokenType::Number]), None, true, true, 0)
         .unwrap();
 
-    let value = match ntype {
-        FloatType::F32 => FloatValue::F32(f32::from_str(&token.value).unwrap()),
-        FloatType::F64 => FloatValue::F64(f64::from_str(&token.value).unwrap()),
-    };
+    // let value = match ntype {
+    //     FloatType::F32 => FloatValue::F32(f32::from_str(&token.value).unwrap()),
+    //     FloatType::F64 => FloatValue::F64(f64::from_str(&token.value).unwrap()),
+    // };
 
     FloatParsed {
         ntype: String::from("FloatParsed"),
-        value,
+        value: token.value,
         span: Span {
             start: token.start,
             end: token.end,
