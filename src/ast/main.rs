@@ -416,6 +416,12 @@ impl AST {
                     self,
                 )));
                 return up; // idk
+            } else if !skip.contains(&"CharParsed".to_string())
+                && current_token.ttype == TokenType::Char
+                && up.is_none()
+            {
+                up = Some(ASTValue::CharParsed(value_parsers::value_char_parser(self)));
+                return up; // idk
             } else if !skip.contains(&"IntParsed".to_string())
                 && current_token.ttype == TokenType::Number
                 && up.is_none()

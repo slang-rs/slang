@@ -31,6 +31,7 @@ pub enum ASTValue {
     DictParsed(DictParsed),
     StringParsed(StringParsed),
     AssignVariableStmt(Box<AssignVariableStmt>),
+    CharParsed(CharParsed),
     FunctionStmt(Box<FunctionStmt>),
     ConditionStmt(Box<ConditionStmt>),
     InitVariableStmt(Box<InitVariableStmt>),
@@ -59,6 +60,7 @@ impl ASTValue {
             ASTValue::FunctionStmt(e) => e.span,
             ASTValue::ConditionStmt(e) => e.span,
             ASTValue::InitVariableStmt(e) => e.span,
+            ASTValue::CharParsed(e) => e.span,
         }
     }
 
@@ -84,6 +86,7 @@ impl ASTValue {
             ASTValue::FunctionStmt(e) => e.ntype.clone(),
             ASTValue::StringParsed(e) => e.ntype.clone(),
             ASTValue::AssignVariableStmt(e) => e.ntype.clone(),
+            ASTValue::CharParsed(e) => e.ntype.clone(),
         }
     }
 
@@ -205,6 +208,13 @@ pub struct TypeCastExpr {
 
 #[derive(Debug, Clone)]
 pub struct StringParsed {
+    pub span: Span,
+    pub ntype: String,
+    pub value: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct CharParsed {
     pub span: Span,
     pub ntype: String,
     pub value: String,

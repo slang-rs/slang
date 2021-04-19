@@ -6,7 +6,8 @@ use ast::main::AST;
 use lexer::slang::run_lexer;
 
 fn main() {
-    let code = String::from(std::fs::read_to_string("./tests/type.sl").unwrap());
+    let code = String::from(std::fs::read_to_string("./tests/main.sl").unwrap());
+    println!("== Lexer ==");
     let results = run_lexer(code);
     for token in &results.tokens {
         println!(
@@ -14,6 +15,7 @@ fn main() {
             token.ttype, token.value, token.start, token.end
         );
     }
+    println!("== AST ==");
     let mut ast = AST::new(results.tokens);
     let block = ast.get_global_block();
     println!("{:#?}", block.body);

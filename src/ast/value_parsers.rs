@@ -4,8 +4,8 @@ use crate::lexer::parser::TokenType;
 // use std::str::FromStr;
 
 use super::types::{
-    ASTValue, ArrayParsed, BoolParsed, DictElement, DictParsed, FloatParsed, IntParsed, NullParsed,
-    StringParsed,
+    ASTValue, ArrayParsed, BoolParsed, CharParsed, DictElement, DictParsed, FloatParsed, IntParsed,
+    NullParsed, StringParsed,
 };
 
 use super::expressions::expr_identifier;
@@ -17,6 +17,21 @@ pub fn value_string_parser(ast: &mut AST) -> StringParsed {
 
     StringParsed {
         ntype: String::from("StringParsed"),
+        value: token.value,
+        span: Span {
+            start: token.start,
+            end: token.end,
+        },
+    }
+}
+
+pub fn value_char_parser(ast: &mut AST) -> CharParsed {
+    let token = ast
+        .check_token(Some(vec![TokenType::Char]), None, true, true, 0, false)
+        .unwrap();
+
+    CharParsed {
+        ntype: String::from("CharParsed"),
         value: token.value,
         span: Span {
             start: token.start,

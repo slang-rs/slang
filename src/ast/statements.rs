@@ -652,7 +652,8 @@ pub fn stmt_global_block(ast: &mut AST) -> GlobalBlockStmt {
     while token.is_some() {
         let tok = token.unwrap();
         let mut other_node = false;
-        if tok.ttype == TokenType::Keyword {
+        if tok.ttype == TokenType::Comment || tok.ttype == TokenType::CommentMultiline {
+        } else if tok.ttype == TokenType::Keyword {
             if tok.value == "import" {
                 let mut spec: Vec<Identifier> = vec![];
 
@@ -740,6 +741,7 @@ pub fn stmt_global_block(ast: &mut AST) -> GlobalBlockStmt {
                 }
             }
         }
+
         token = ast.get_token(0, true, false);
     }
 

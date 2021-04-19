@@ -354,6 +354,13 @@ impl Lexer {
                     break;
                 }
                 state.push(String::from(ch));
+            } else if state.stype == StateType::Char && ch != '\'' {
+                if ch == '\n' {
+                    self.new_line();
+                    results.error(self, "Expected end of char".to_string());
+                    break;
+                }
+                state.push(String::from(ch));
             } else if state.stype == StateType::Comment {
                 if ch == '\n' {
                     self.new_line();
