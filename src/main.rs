@@ -6,7 +6,7 @@ use ast::main::AST;
 use lexer::slang::run_lexer;
 
 fn main() {
-    let code = String::from(std::fs::read_to_string("./tests/test.sl").unwrap());
+    let code = String::from(std::fs::read_to_string("./tests/type.sl").unwrap());
     let results = run_lexer(code);
     for token in &results.tokens {
         println!(

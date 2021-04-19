@@ -67,10 +67,10 @@ impl AST {
             }
         }
 
-        println!(
-            "get token ({}) {} {} {} -> {:?}",
-            self.token_idx, offset, add_to_index, skip_newline, token
-        );
+        // println!(
+        //     "get token ({}) {} {} {} -> {:?}",
+        //     self.token_idx, offset, add_to_index, skip_newline, token
+        // );
 
         if token.is_some() {
             Some(token.unwrap().clone())
@@ -89,7 +89,7 @@ impl AST {
         skip_newline: bool,
     ) -> Option<Token> {
         let token = self.get_token(offset, false, skip_newline);
-        println!("check token {} {} {:?}", error, add_to_index, token);
+        // println!("check token {} {} {:?}", error, add_to_index, token);
         if token.is_none() {
             if error {
                 let last_token = self.tokens.last();
@@ -242,7 +242,7 @@ impl AST {
             }
         }
 
-        let arr_len: Option<usize>;
+        let mut arr_len: Option<usize> = None;
         if self
             .check_token(
                 Some(vec![TokenType::SqBraces]),
@@ -254,15 +254,14 @@ impl AST {
             )
             .is_some()
         {
-            arr_len = Some(
-                usize::from_str(
-                    &self
-                        .check_token(Some(vec![TokenType::Number]), None, false, true, 0, false)
-                        .unwrap()
-                        .value,
-                )
-                .unwrap(),
-            );
+            let len_tok =
+                self.check_token(Some(vec![TokenType::Number]), None, false, true, 0, false);
+
+            arr_len = Some(if len_tok.is_some() {
+                usize::from_str(&len_tok.unwrap().value).unwrap()
+            } else {
+                0
+            });
 
             end = self
                 .check_token(
@@ -275,14 +274,14 @@ impl AST {
                 )
                 .unwrap()
                 .end;
-
-            collec.push(TypeValue::Expr(TypeExpr {
-                span: Span { start, end },
-                ntype: "TypeExpr".to_string(),
-                value: vec![typev],
-                arr_len,
-            }));
         }
+
+        collec.push(TypeValue::Expr(TypeExpr {
+            span: Span { start, end },
+            ntype: "TypeExpr".to_string(),
+            value: vec![typev],
+            arr_len,
+        }));
 
         Span { start, end }
     }
@@ -298,7 +297,7 @@ impl AST {
                 false,
                 true,
                 0,
-                false,
+                true,
             )
             .is_some()
         {
@@ -390,7 +389,6 @@ impl AST {
                 || !skip.contains(&"CallFunctionExpr".to_string()))
                 && current_token.ttype == TokenType::Word
             {
-                println!("astv expr access {:?}", current_token);
                 let res = expr_access(self, false, false, false);
                 let astv = if res.is_some() {
                     Some(Accessable::get_ast_value(&res.unwrap()))
@@ -532,7 +530,6 @@ impl AST {
             {
                 up
             } else {
-                println!("fallback test {:?}", up);
                 self.get_ast_value(false, skip, up)
             }
         } else {

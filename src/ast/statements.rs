@@ -123,7 +123,6 @@ pub fn stmt_assign_variable(ast: &mut AST, up: Option<Assignable>) -> AssignVari
 }
 
 pub fn stmt_function(ast: &mut AST, name_req: bool, word: Option<String>) -> FunctionStmt {
-    println!("stmt func {} {:?}", name_req, word);
     let token_start = ast
         .check_token(
             Some(vec![if word.is_some() {
