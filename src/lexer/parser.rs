@@ -25,6 +25,7 @@ pub enum TokenType {
 
 #[derive(Debug, Clone)]
 pub struct Token {
+    pub idx: usize,
     pub ttype: TokenType,
     pub value: String,
     pub start: Position,
@@ -141,8 +142,14 @@ impl LexerState {
         self.value.join("")
     }
 
-    pub fn make_token(&mut self, lexer: &Lexer, ttype: TokenType) -> Token {
+    pub fn make_token(
+        &mut self,
+        lexer: &Lexer,
+        ttype: TokenType,
+        results: &mut LexerResults,
+    ) -> Token {
         Token {
+            idx: results.tokens.len(),
             start: Position::new(self.line, self.col),
             end: Position::new(lexer.line, lexer.col),
             ttype,
@@ -156,7 +163,7 @@ impl LexerState {
         results: &mut LexerResults,
         ttype: TokenType,
     ) -> Token {
-        let token = self.make_token(lexer, ttype);
+        let token = self.make_token(lexer, ttype, results);
         results.tokens.push(token.clone());
         token
     }

@@ -26,6 +26,7 @@ pub fn stmt_init_variable(ast: &mut AST) -> InitVariableStmt {
             true,
             true,
             0,
+            false,
         )
         .unwrap();
 
@@ -102,6 +103,7 @@ pub fn stmt_assign_variable(ast: &mut AST, up: Option<Assignable>) -> AssignVari
             true,
             true,
             0,
+            false,
         )
         .unwrap()
         .value;
@@ -123,18 +125,20 @@ pub fn stmt_assign_variable(ast: &mut AST, up: Option<Assignable>) -> AssignVari
 pub fn stmt_function(ast: &mut AST, name_req: bool, word: Option<String>) -> FunctionStmt {
     println!("stmt func {} {:?}", name_req, word);
     let token_start = ast
-        .check_one(
-            if word.is_some() {
+        .check_token(
+            Some(vec![if word.is_some() {
                 TokenType::Word
             } else {
                 TokenType::Keyword
-            },
-            if word.is_some() {
+            }]),
+            Some(vec![if word.is_some() {
                 word.clone().unwrap()
             } else {
                 String::from("func")
-            },
+            }]),
             true,
+            true,
+            0,
             true,
         )
         .unwrap();
@@ -142,7 +146,7 @@ pub fn stmt_function(ast: &mut AST, name_req: bool, word: Option<String>) -> Fun
     let mut name: Option<Identifier> = None;
     if word.is_none()
         && ast
-            .check_token(Some(vec![TokenType::Word]), None, false, false, 0)
+            .check_token(Some(vec![TokenType::Word]), None, false, false, 0, false)
             .is_some()
     {
         name = Some(expr_identifier(ast));
@@ -165,7 +169,8 @@ pub fn stmt_function(ast: &mut AST, name_req: bool, word: Option<String>) -> Fun
         }
     }
 
-    ast.check_one(TokenType::Parenthesis, String::from("("), true, true);
+    ast.check_one(TokenType::Parenthesis, String::from("("), true, true)
+        .unwrap();
 
     let mut params: Vec<FunctionParam> = vec![];
     while ast
@@ -174,7 +179,8 @@ pub fn stmt_function(ast: &mut AST, name_req: bool, word: Option<String>) -> Fun
     {
         let name = expr_identifier(ast);
 
-        ast.check_one(TokenType::Operator, String::from(":"), true, true);
+        ast.check_one(TokenType::Operator, String::from(":"), true, true)
+            .unwrap();
         let ptype = ast.get_type_expr();
 
         let mut default: Option<ASTValue> = None;
@@ -189,6 +195,8 @@ pub fn stmt_function(ast: &mut AST, name_req: bool, word: Option<String>) -> Fun
         {
             default = ast.get_ast_value(true, vec![], None);
         }
+
+        ast.check_one(TokenType::Operator, String::from(","), false, true);
 
         params.push(FunctionParam {
             name: name.clone(),
@@ -459,7 +467,7 @@ pub fn stmt_for(ast: &mut AST) -> ForStmt {
     let mut idx_val: Option<Identifier> = None;
 
     if ast
-        .check_token(Some(vec![TokenType::Word]), None, false, false, 0)
+        .check_token(Some(vec![TokenType::Word]), None, false, false, 0, false)
         .is_some()
         && ast
             .check_token(
@@ -468,6 +476,7 @@ pub fn stmt_for(ast: &mut AST) -> ForStmt {
                 false,
                 false,
                 0,
+                false,
             )
             .is_some()
     {
@@ -568,7 +577,7 @@ pub fn stmt_class(ast: &mut AST) -> ClassStmt {
             .check_one(TokenType::Operator, String::from(","), false, true)
             .is_some()
             && ast
-                .check_token(Some(vec![TokenType::Word]), None, false, false, 0)
+                .check_token(Some(vec![TokenType::Word]), None, false, false, 0, false)
                 .is_some();
     }
 
@@ -598,8 +607,21 @@ pub fn stmt_class(ast: &mut AST) -> ClassStmt {
                 .is_some()
             {
                 initializer = Some(stmt_function(ast, false, Some(String::from("init"))));
-            } else {
+            } else if ast
+                .check_one(TokenType::Keyword, String::from("func"), false, false)
+                .is_some()
+            {
                 methods.push(stmt_function(ast, true, None));
+            } else {
+                let tok = ast.get_token(0, true, false);
+                if tok.is_some() {
+                    let tok = tok.unwrap();
+                    ast.error(
+                        format!("Unexpected token {}", tok.value),
+                        tok.start.line,
+                        tok.start.col,
+                    );
+                }
             }
         }
     }
@@ -636,7 +658,7 @@ pub fn stmt_global_block(ast: &mut AST) -> GlobalBlockStmt {
                 let mut spec: Vec<Identifier> = vec![];
 
                 while ast
-                    .check_token(Some(vec![TokenType::Word]), None, false, false, 0)
+                    .check_token(Some(vec![TokenType::Word]), None, false, false, 0, false)
                     .is_some()
                 {
                     spec.push(expr_identifier(ast));

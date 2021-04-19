@@ -12,7 +12,7 @@ use super::expressions::expr_identifier;
 
 pub fn value_string_parser(ast: &mut AST) -> StringParsed {
     let token = ast
-        .check_token(Some(vec![TokenType::String]), None, true, true, 0)
+        .check_token(Some(vec![TokenType::String]), None, true, true, 0, false)
         .unwrap();
 
     StringParsed {
@@ -27,7 +27,7 @@ pub fn value_string_parser(ast: &mut AST) -> StringParsed {
 
 pub fn value_int_parser(ast: &mut AST) -> IntParsed {
     let token = ast
-        .check_token(Some(vec![TokenType::Number]), None, true, true, 0)
+        .check_token(Some(vec![TokenType::Number]), None, true, true, 0, false)
         .unwrap();
 
     // let value = match ntype {
@@ -53,7 +53,7 @@ pub fn value_int_parser(ast: &mut AST) -> IntParsed {
 
 pub fn value_float_parser(ast: &mut AST) -> FloatParsed {
     let token = ast
-        .check_token(Some(vec![TokenType::Number]), None, true, true, 0)
+        .check_token(Some(vec![TokenType::Number]), None, true, true, 0, false)
         .unwrap();
 
     // let value = match ntype {
@@ -79,6 +79,7 @@ pub fn value_bool_parser(ast: &mut AST) -> BoolParsed {
             true,
             true,
             0,
+            false,
         )
         .unwrap();
 
@@ -100,6 +101,7 @@ pub fn value_null_parser(ast: &mut AST) -> NullParsed {
             true,
             true,
             0,
+            false,
         )
         .unwrap();
 
@@ -120,6 +122,7 @@ pub fn value_array_parser(ast: &mut AST) -> ArrayParsed {
             true,
             true,
             0,
+            false,
         )
         .unwrap();
 
@@ -132,6 +135,7 @@ pub fn value_array_parser(ast: &mut AST) -> ArrayParsed {
             false,
             false,
             0,
+            false,
         )
         .is_none()
     {
@@ -142,6 +146,7 @@ pub fn value_array_parser(ast: &mut AST) -> ArrayParsed {
             false,
             true,
             0,
+            false,
         );
     }
 
@@ -152,6 +157,7 @@ pub fn value_array_parser(ast: &mut AST) -> ArrayParsed {
             true,
             true,
             0,
+            false,
         )
         .unwrap();
 
@@ -173,6 +179,7 @@ pub fn value_dict_parser(ast: &mut AST) -> DictParsed {
             true,
             true,
             0,
+            false,
         )
         .unwrap();
 
@@ -185,6 +192,7 @@ pub fn value_dict_parser(ast: &mut AST) -> DictParsed {
             false,
             false,
             0,
+            false,
         )
         .is_none()
     {
@@ -196,6 +204,7 @@ pub fn value_dict_parser(ast: &mut AST) -> DictParsed {
             true,
             true,
             0,
+            false,
         );
 
         let el_value = ast.get_ast_value(true, vec![], None).unwrap();
@@ -215,6 +224,7 @@ pub fn value_dict_parser(ast: &mut AST) -> DictParsed {
             false,
             true,
             0,
+            false,
         );
     }
 
@@ -225,6 +235,7 @@ pub fn value_dict_parser(ast: &mut AST) -> DictParsed {
             true,
             true,
             0,
+            false,
         )
         .unwrap();
 

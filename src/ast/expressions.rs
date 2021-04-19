@@ -9,7 +9,7 @@ use crate::lexer::parser::TokenType;
 
 pub fn expr_identifier(ast: &mut AST) -> Identifier {
     let token = ast
-        .check_token(Some(vec![TokenType::Word]), None, true, true, 0)
+        .check_token(Some(vec![TokenType::Word]), None, true, true, 0, false)
         .unwrap();
 
     Identifier {
@@ -39,6 +39,7 @@ pub fn expr_access_dot(ast: &mut AST, left: Option<DotAccessable>) -> AccessDotE
             false,
             true,
             0,
+            false,
         )
         .is_some()
     {
@@ -50,6 +51,7 @@ pub fn expr_access_dot(ast: &mut AST, left: Option<DotAccessable>) -> AccessDotE
             true,
             true,
             0,
+            false,
         )
         .unwrap();
     }
@@ -85,6 +87,7 @@ pub fn expr_access_index(ast: &mut AST, left: Option<DotAccessable>) -> AccessIn
             true,
             true,
             0,
+            false,
         )
         .unwrap();
 
@@ -97,6 +100,7 @@ pub fn expr_access_index(ast: &mut AST, left: Option<DotAccessable>) -> AccessIn
             true,
             true,
             0,
+            false,
         )
         .unwrap();
 
@@ -126,6 +130,7 @@ pub fn expr_call_function(ast: &mut AST, left: Option<ASTValue>) -> CallFunction
             true,
             true,
             0,
+            false,
         )
         .unwrap();
 
@@ -138,6 +143,7 @@ pub fn expr_call_function(ast: &mut AST, left: Option<ASTValue>) -> CallFunction
             false,
             false,
             0,
+            false,
         )
         .is_none()
     {
@@ -149,6 +155,7 @@ pub fn expr_call_function(ast: &mut AST, left: Option<ASTValue>) -> CallFunction
             false,
             true,
             0,
+            false,
         );
     }
 
@@ -159,6 +166,7 @@ pub fn expr_call_function(ast: &mut AST, left: Option<ASTValue>) -> CallFunction
             true,
             true,
             0,
+            false,
         )
         .unwrap();
 
@@ -216,7 +224,7 @@ pub fn expr_access(
     skip_func: bool,
 ) -> Option<Accessable> {
     println!("expr access {} {} {}", skip_dot, skip_index, skip_func);
-    ast.check_token(Some(vec![TokenType::Word]), None, false, false, 0);
+    ast.check_token(Some(vec![TokenType::Word]), None, false, false, 0, false);
     println!("expr check");
 
     let is_dot = ast
@@ -226,6 +234,7 @@ pub fn expr_access(
             false,
             false,
             1,
+            false,
         )
         .is_some();
 
@@ -236,6 +245,7 @@ pub fn expr_access(
             false,
             false,
             1,
+            false,
         )
         .is_some();
 
@@ -246,6 +256,7 @@ pub fn expr_access(
             false,
             false,
             0,
+            false,
         )
         .is_some();
 
@@ -263,6 +274,7 @@ pub fn expr_access(
                 false,
                 false,
                 0,
+                false,
             )
             .is_some()
         {
@@ -274,7 +286,7 @@ pub fn expr_access(
         println!("is index");
         Some(Accessable::AccessIndexExpr(expr_access_index(ast, None)))
     } else if ast
-        .check_token(Some(vec![TokenType::Word]), None, false, false, 0)
+        .check_token(Some(vec![TokenType::Word]), None, false, false, 0, false)
         .is_some()
     {
         println!("is ident");
@@ -297,6 +309,7 @@ pub fn expr_type_cast(ast: &mut AST, up: Option<ASTValue>) -> TypeCastExpr {
         true,
         true,
         0,
+        false,
     )
     .unwrap();
 
@@ -307,6 +320,7 @@ pub fn expr_type_cast(ast: &mut AST, up: Option<ASTValue>) -> TypeCastExpr {
             true,
             true,
             0,
+            false,
         )
         .is_some();
 

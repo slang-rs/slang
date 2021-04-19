@@ -17,6 +17,7 @@ pub fn op_arithmetic(ast: &mut AST, left: Option<ASTValue>) -> ArithmeticOp {
             true,
             true,
             0,
+            false,
         )
         .unwrap()
         .value;
@@ -53,7 +54,14 @@ pub fn op_logical(ast: &mut AST, left: Option<ASTValue>) -> LogicalOp {
     };
 
     let op = ast
-        .check_token(Some(vec![TokenType::LogicalOperator]), None, true, true, 0)
+        .check_token(
+            Some(vec![TokenType::LogicalOperator]),
+            None,
+            true,
+            true,
+            0,
+            false,
+        )
         .unwrap()
         .value;
 
@@ -89,7 +97,14 @@ pub fn op_binary(ast: &mut AST, left: Option<ASTValue>) -> BinaryOp {
     };
 
     let op = ast
-        .check_token(Some(vec![TokenType::BinaryOperator]), None, true, true, 0)
+        .check_token(
+            Some(vec![TokenType::BinaryOperator]),
+            None,
+            true,
+            true,
+            0,
+            false,
+        )
         .unwrap()
         .value;
 
@@ -124,19 +139,40 @@ pub fn op_unary(ast: &mut AST, left: Option<ASTValue>) -> UnaryOp {
 
     if left.is_none()
         && ast
-            .check_token(Some(vec![TokenType::UnaryOperator]), None, false, false, 0)
+            .check_token(
+                Some(vec![TokenType::UnaryOperator]),
+                None,
+                false,
+                false,
+                0,
+                false,
+            )
             .is_some()
     {
         loc = Location::Left;
         op = ast
-            .check_token(Some(vec![TokenType::UnaryOperator]), None, true, true, 0)
+            .check_token(
+                Some(vec![TokenType::UnaryOperator]),
+                None,
+                true,
+                true,
+                0,
+                false,
+            )
             .unwrap();
         value = ast.get_ast_value(true, vec![], None).unwrap();
     } else {
         loc = Location::Right;
         value = ast.get_ast_value(true, vec![], None).unwrap();
         op = ast
-            .check_token(Some(vec![TokenType::UnaryOperator]), None, true, true, 0)
+            .check_token(
+                Some(vec![TokenType::UnaryOperator]),
+                None,
+                true,
+                true,
+                0,
+                false,
+            )
             .unwrap();
     }
 

@@ -86,8 +86,9 @@ impl AST {
         error: bool,
         add_to_index: bool,
         offset: isize,
+        skip_newline: bool,
     ) -> Option<Token> {
-        let token = self.get_token(offset, false, false);
+        let token = self.get_token(offset, false, skip_newline);
         println!("check token {} {} {:?}", error, add_to_index, token);
         if token.is_none() {
             if error {
@@ -110,7 +111,7 @@ impl AST {
             let token = token.unwrap();
 
             if token.ttype == TokenType::NewLine {
-                return self.check_token(ttype, value, error, add_to_index, offset + 1);
+                return self.check_token(ttype, value, error, true, offset + 1, skip_newline);
             }
 
             let mut match_ttype = true;
@@ -133,6 +134,7 @@ impl AST {
                 if add_to_index {
                     self.token_idx += 1;
                 }
+
                 Some(token)
             } else {
                 if error {
@@ -155,7 +157,14 @@ impl AST {
         error: bool,
         add_to_index: bool,
     ) -> Option<Token> {
-        self.check_token(Some(vec![ttype]), Some(vec![value]), error, add_to_index, 0)
+        self.check_token(
+            Some(vec![ttype]),
+            Some(vec![value]),
+            error,
+            add_to_index,
+            0,
+            false,
+        )
     }
 
     pub fn check_mult(
@@ -165,7 +174,14 @@ impl AST {
         error: bool,
         add_to_index: bool,
     ) -> Option<Token> {
-        self.check_token(Some(vec![ttype]), Some(value), error, add_to_index, 0)
+        self.check_token(
+            Some(vec![ttype]),
+            Some(value),
+            error,
+            add_to_index,
+            0,
+            false,
+        )
     }
 
     fn get_type(&mut self, collec: &mut Vec<TypeValue>) -> Span {
@@ -173,7 +189,7 @@ impl AST {
         let mut start = Position::new(0, 0);
         let mut end = Position::new(0, 0);
 
-        let type_token = self.check_token(Some(vec![TokenType::Type]), None, false, true, 0);
+        let type_token = self.check_token(Some(vec![TokenType::Type]), None, false, true, 0, false);
 
         if type_token.is_some() {
             let type_token = type_token.unwrap();
@@ -187,6 +203,7 @@ impl AST {
                 false,
                 true,
                 0,
+                false,
             );
 
             if with_paren.is_some() {
@@ -201,6 +218,7 @@ impl AST {
                         true,
                         true,
                         0,
+                        false,
                     )
                     .unwrap()
                     .end;
@@ -232,13 +250,14 @@ impl AST {
                 false,
                 true,
                 0,
+                false,
             )
             .is_some()
         {
             arr_len = Some(
                 usize::from_str(
                     &self
-                        .check_token(Some(vec![TokenType::Number]), None, false, true, 0)
+                        .check_token(Some(vec![TokenType::Number]), None, false, true, 0, false)
                         .unwrap()
                         .value,
                 )
@@ -252,6 +271,7 @@ impl AST {
                     true,
                     true,
                     0,
+                    false,
                 )
                 .unwrap()
                 .end;
@@ -278,6 +298,7 @@ impl AST {
                 false,
                 true,
                 0,
+                false,
             )
             .is_some()
         {
