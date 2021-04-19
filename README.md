@@ -1,14 +1,14 @@
 # Slang
 
-A simple programming language for everyone, made in Rust.
+A simple programming language for everyone, made with Rust.
 
 ## State
 
-Yet in a very early stage. We're in-between a port from TypeScript POC of the language, to a Rust, for an MVP.
+In very early stages. Plan is to create a byte-code compiler and make that execute in the Slang-VM.
 
 ## Contributing
 
-Contributions are not yet open until we have an MVP.
+You are welcome to contribute!
 
 ## License
 
